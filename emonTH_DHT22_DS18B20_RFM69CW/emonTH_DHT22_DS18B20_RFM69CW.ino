@@ -39,6 +39,7 @@
   V1.5.1      11/05/15 fix bug to make RF node ID DIP switches work 
   V1.6        10/08/15 add in delay after RF12_wakeup to improve RF packet loss http://openenergymonitor.org/emon/node/11062
   V1.6.1      13/08/15 fix position of delay (after RF12_WAKEUP) http://openenergymonitor.org/emon/node/11062#comment-33251
+  V1.7        25/08/15 Add support for interrupt pulse counting 
 */
 
 #define RF69_COMPAT 1                                                              // Set to 1 if using RFM69CW or 0 is using RFM12B
@@ -46,13 +47,19 @@
 
 boolean debug=1;                                       //Set to 1 to few debug serial output, turning debug off increases battery life
 
-#define RF_freq RF12_868MHZ                 // Frequency of RF12B module can be RF12_433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.
+#define RF_freq RF12_433MHZ                 // Frequency of RF12B module can be RF12_433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.
 int nodeID = 19;                               // EmonTH temperature RFM12B node ID - should be unique on network
 const int networkGroup = 210;                // EmonTH RFM12B wireless network group - needs to be same as emonBase and emonGLCD
                                                                        // DS18B20 resolution 9,10,11 or 12bit corresponding to (0.5, 0.25, 0.125, 0.0625 degrees C LSB), lower resolution means lower power
 
 const int time_between_readings= 1;                                   // in minutes
 const int TEMPERATURE_PRECISION=11;                                   // 9 (93.8ms),10 (187.5ms) ,11 (375ms) or 12 (750ms) bits equal to resplution of 0.5C, 0.25C, 0.125C and 0.0625C
+
+// Pulse Counting 
+const byte min_pulsewidth= 110;                                       // minimum width of interrupt pulse (default pulse output meters = 100ms)
+unsigned long pulsetime=0;                                            // Record time of interrupt pulse
+volatile byte pulseCount = 0;
+
 #define ASYNC_DELAY 375                                               // 9bit requres 95ms, 10bit 187ms, 11bit 375ms and 12bit resolution takes 750ms
 // See block comment above for library info
 #include <avr/power.h>
@@ -69,11 +76,10 @@ const int LED=            9;
 const int BATT_ADC=       1;
 const int DIP_switch1=    7;
 const int DIP_switch2=    8;
+const int IRQ_PIN=         1;                                          // IRQ 1 for emonTH V1.5 / IRQ 0 for emonTH V1.4
 #define ONE_WIRE_BUS      19
 #define DHTPIN            18   
 
-// Humidity code adapted from ladyada' example                        // emonTh DHT22 data pin
-// Uncomment whatever type you're using!
 // #define DHTTYPE DHT11   // DHT 11 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 DHT dht(DHTPIN, DHTTYPE);
@@ -86,8 +92,9 @@ boolean DS18B20;                                                      // create 
 typedef struct {                                                      // RFM12B RF payload datastructure
   	  int temp;
           int temp_external;
-          int humidity;    
-          int battery;          	                                      
+          int humidity;
+          int battery;
+          unsigned long pulsecount;
 } Payload;
 Payload emonth;
 
@@ -133,7 +140,7 @@ void setup() {
   {
     Serial.begin(9600);
     Serial.print(DIP1); Serial.println(DIP2);
-    Serial.println("emonTH - Firmware V1.6.1"); 
+    Serial.println("emonTH - Firmware V1.7"); 
     Serial.println("OpenEnergyMonitor.org");
     #if (RF69_COMPAT)
       Serial.println("RFM69CW Init> ");
@@ -230,6 +237,10 @@ void setup() {
   // Serial.print(DS18B20); Serial.print(DHT22_status);
   // if (debug==1) delay(200);
    
+  // Attach Pulse Count to Interrupt
+  emonth.pulsecount = 0;
+  attachInterrupt(IRQ_PIN, onPulse, FALLING);
+  
   digitalWrite(LED,LOW);
 } // end of setup
 
@@ -347,3 +358,16 @@ void dodelay(unsigned int ms)
   ADMUX=oldADMUX;
 }
 
+
+// The interrupt routine - runs each time a falling edge of a pulse is detected
+void onPulse()
+{
+  if ( (millis() - pulsetime) > min_pulsewidth) {
+    pulseCount++;					//calculate wh elapsed from time between pulses
+    pulsetime=millis();
+    
+    digitalWrite(LED, HIGH);
+    delay(2);
+    digitalWrite(LED, LOW);
+  }
+}
