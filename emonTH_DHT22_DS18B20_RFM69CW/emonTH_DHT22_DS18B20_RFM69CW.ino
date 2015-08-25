@@ -48,7 +48,7 @@
 boolean debug=1;                                       //Set to 1 to few debug serial output, turning debug off increases battery life
 
 #define RF_freq RF12_433MHZ                 // Frequency of RF12B module can be RF12_433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.
-int nodeID = 19;                               // EmonTH temperature RFM12B node ID - should be unique on network
+int nodeID =19;                               // EmonTH temperature RFM12B node ID - should be unique on network
 const int networkGroup = 210;                // EmonTH RFM12B wireless network group - needs to be same as emonBase and emonGLCD
                                                                        // DS18B20 resolution 9,10,11 or 12bit corresponding to (0.5, 0.25, 0.125, 0.0625 degrees C LSB), lower resolution means lower power
 
@@ -59,6 +59,10 @@ const int TEMPERATURE_PRECISION=11;                                   // 9 (93.8
 const byte min_pulsewidth= 110;                                       // minimum width of interrupt pulse (default pulse output meters = 100ms)
 unsigned long pulsetime=0;                                            // Record time of interrupt pulse
 volatile byte pulseCount = 0;
+
+byte oldADCSRA;
+byte oldADCSRB;
+byte oldADMUX;
 
 #define ASYNC_DELAY 375                                               // 9bit requres 95ms, 10bit 187ms, 11bit 375ms and 12bit resolution takes 750ms
 // See block comment above for library info
@@ -238,8 +242,10 @@ void setup() {
   // if (debug==1) delay(200);
    
   // Attach Pulse Count to Interrupt
+  pinMode(IRQ_PIN, INPUT_PULLUP);
   emonth.pulsecount = 0;
   attachInterrupt(IRQ_PIN, onPulse, FALLING);
+  
   
   digitalWrite(LED,LOW);
   
@@ -250,6 +256,7 @@ void setup() {
       digitalWrite(LED, HIGH); delay(200); digitalWrite(LED,LOW); delay(200);
     }
   }
+  delay(100);
 } // end of setup
 
 
@@ -324,6 +331,10 @@ void loop()
   dodelay(100);
   digitalWrite(LED,LOW);  
   
+  
+  oldADCSRA=ADCSRA;
+  oldADCSRB=ADCSRB;
+  oldADMUX=ADMUX;
   //delay loop, wait for time_between_reading minutes
   for (int i=0; i<time_between_readings; i++)
   {
@@ -331,14 +342,17 @@ void loop()
     //caution parameter cannot be more than 65000, maybe find better solution
     //due to internal time source 60000 is longer than 1 minute. so 55s is used.
   }
+  ADCSRA=oldADCSRA;         // restore ADC state
+  ADCSRB=oldADCSRB;
+  ADMUX=oldADMUX;
 
 } // end loop 
 
 void dodelay(unsigned int ms)
 {
-  byte oldADCSRA=ADCSRA;
-  byte oldADCSRB=ADCSRB;
-  byte oldADMUX=ADMUX;
+   oldADCSRA=ADCSRA;
+   oldADCSRB=ADCSRB;
+   oldADMUX=ADMUX;
       
   Sleepy::loseSomeTime(ms); // JeeLabs power save function: enter low power mode for x seconds (valid range 16-65000 ms)
       
@@ -351,12 +365,16 @@ void dodelay(unsigned int ms)
 // The interrupt routine - runs each time a falling edge of a pulse is detected
 void onPulse()
 {
+  ADCSRA=oldADCSRA;         // restore ADC state
+  ADCSRB=oldADCSRB;
+  ADMUX=oldADMUX;
+  
   if ( (millis() - pulsetime) > min_pulsewidth) {
     pulseCount++;					//calculate wh elapsed from time between pulses
     pulsetime=millis();
-    
-    digitalWrite(LED, HIGH);
-    delay(2);
-    digitalWrite(LED, LOW);
   }
+  
+  oldADCSRA=ADCSRA;
+  oldADCSRB=ADCSRB;
+  oldADMUX=ADMUX;
 }
