@@ -266,6 +266,7 @@ void loop()
 //################################################################################################################################
 { 
 
+  
   if (DS18B20==1)
   {
     digitalWrite(DS18B20_PWR, HIGH); dodelay(50); 
@@ -327,25 +328,9 @@ void loop()
   rf12_sleep(RF12_SLEEP);
   dodelay(100);
   power_spi_disable();  
-  digitalWrite(LED,HIGH);
-  dodelay(100);
-  digitalWrite(LED,LOW);  
   
   
-  oldADCSRA=ADCSRA;
-  oldADCSRB=ADCSRB;
-  oldADMUX=ADMUX;
-  //delay loop, wait for time_between_reading minutes
-  for (int i=0; i<time_between_readings; i++)
-  {
-    dodelay(55000); //1 minute should be 60000 but is not because of variation of internal time source
-    //caution parameter cannot be more than 65000, maybe find better solution
-    //due to internal time source 60000 is longer than 1 minute. so 55s is used.
-  }
-  ADCSRA=oldADCSRA;         // restore ADC state
-  ADCSRB=oldADCSRB;
-  ADMUX=oldADMUX;
-
+  
 } // end loop 
 
 void dodelay(unsigned int ms)
