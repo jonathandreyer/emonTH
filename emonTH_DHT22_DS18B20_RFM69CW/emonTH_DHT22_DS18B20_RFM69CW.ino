@@ -188,19 +188,18 @@ void setup() {
   
   if (isnan(t) || isnan(h))                                             // check if returns are valid, if they are NaN (not a number) then something went wrong!
   {
-    if (debug==1) Serial.println(" - Unable to find DHT22 Sensor..trying agin"); delay(100);
     Sleepy::loseSomeTime(1500); 
     float h = dht.readHumidity();  float t = dht.readTemperature();
     if (isnan(t) || isnan(h))   
     {
-      if (debug==1) Serial.println(" - Unable to find DHT22 Sensor for 2nd time..giving up"); 
+      if (debug==1) {Serial.println(""); Serial.println("NO DHT22"); }
       DHT22_status=0;
     } 
   } 
   else 
   {
     DHT22_status=1;
-    if (debug==1) Serial.println("Detected DHT22 temp & humidity sesnor");  
+    if (debug==1) {Serial.println(""); Serial.println("Detected DHT22"); }
   }   
  
   //################################################################################################################################
@@ -218,7 +217,7 @@ void setup() {
   
   if (numSensors==0)
   {
-    if (debug==1) Serial.println("No DS18B20 detected");
+    if (debug==1) Serial.println("No DS18B20");
     DS18B20=0; 
   } 
   else 
@@ -226,14 +225,15 @@ void setup() {
     DS18B20=1; 
     if (debug==1) {
       Serial.print("Detected "); Serial.print(numSensors); Serial.println(" DS18B20");
-       if (DHT22_status==1) Serial.println("DS18B20 and DHT22 found, assuming DS18B20 is external sensor");
+       if (DHT22_status==1) Serial.println("DS18B20 & DHT22, assuming DS18B20 is external");
     }
     
   }
   if (debug==1) delay(200);
   
   //################################################################################################################################
-  
+  Serial.println(" "); Serial.println("Sensor readings x 10 >");
+  Serial.println("temp temp_ex  humidity  battery  pulse");
   // Serial.print(DS18B20); Serial.print(DHT22_status);
   // if (debug==1) delay(200);
    
@@ -242,6 +242,14 @@ void setup() {
   attachInterrupt(IRQ_PIN, onPulse, FALLING);
   
   digitalWrite(LED,LOW);
+  
+    if ((DS18B20==0) && (DHT22_status==0))        //if neither DS18B20 or DHT22 is detected flash the LED
+  {
+    for (int i=0; i<20; i++)
+    {
+      digitalWrite(LED, HIGH); delay(200); digitalWrite(LED,LOW); delay(200);
+    }
+  }
 } // end of setup
 
 
@@ -250,16 +258,6 @@ void setup() {
 void loop()
 //################################################################################################################################
 { 
-  
-  if ((DS18B20==0) && (DHT22_status==0))        //if neither DS18B20 or DHT22 is detected flash the LED then goto forever sleep
-  {
-    for (int i=0; i<20; i++)
-    {
-      digitalWrite(LED, HIGH); delay(200); digitalWrite(LED,LOW); delay(200);
-    }
-    cli();                                      //stop responding to interrupts 
-    Sleepy::powerDown();                        //sleep forever
-  }
 
   if (DS18B20==1)
   {
@@ -292,31 +290,22 @@ void loop()
   
   emonth.battery=int(analogRead(BATT_ADC)*0.03225806);                    //read battery voltage, convert ADC to volts x10
                                                
-  
+     if (pulseCount)                                                       // if the ISR has counted some pulses, update the total count
+    {
+      cli();                                                              // Disable interrupt just in case pulse comes in while we are updating the count
+      emonth.pulsecount += pulseCount;
+      pulseCount = 0;
+      sei();                                                              // Re-enable interrupts
+    }     
   
   if (debug==1) 
   {
-    if (DS18B20)
-    {
-      Serial.print("DS18B20 Temperature: ");
-      if (DHT22_status) Serial.print(emonth.temp_external/10.0); 
-      if (!DHT22_status) Serial.print(emonth.temp/10.0);
-      Serial.print("C, ");
-    }
-    
-    if (DHT22_status)
-    {
-      Serial.print("DHT22 Temperature: ");
-      Serial.print(emonth.temp/10.0); 
-      Serial.print("C, DHT22 Humidity: ");
-      Serial.print(emonth.humidity/10.0);
-      Serial.print("%, ");
-    }
-    
-    Serial.print("Battery voltage: ");  
-    Serial.print(emonth.battery/10.0);
-    Serial.println("V");
-    delay(100);
+    Serial.print(emonth.temp); Serial.print(" ");
+    Serial.print(emonth.temp_external); Serial.print(" ");
+    Serial.print(emonth.humidity); Serial.print(" ");
+    Serial.print(emonth.battery); Serial.print(" ");
+    Serial.print(emonth.pulsecount); Serial.println(" ");
+    delay(20); 
   }
 
   
