@@ -50,7 +50,7 @@
 //change this 4 parameters
 const int nodeID = 19;              // EmonTH temperature RFM12B node ID - has to be unique on network
 const int networkGroup = 210;       // EmonTH RFM12B wireless network group - needs to be same as emonBase and emonGLCD
-const int time_between_readings=5;        // in minutes, sleep between wakeups
+const int time_between_readings=1;        // in minutes, sleep between wakeups
 #define BLINKLED 0                  // blink led while RF transmission, set to 0 for longer battery life but impact should be minimal
 
 
@@ -132,6 +132,7 @@ void setup() {
     Serial.begin(9600);
     Serial.println("emonTH"); 
     Serial.println("OpenEnergyMonitor.org");
+    Serial.println("Version: V1.4.1");
     Serial.print("Node: "); 
     Serial.print(nodeID); 
     Serial.print(" Freq: "); 
@@ -232,7 +233,7 @@ void setup() {
   
   // Serial.print(DS18B20); Serial.print(DHT22_status);
   // if (debug==1) delay(200);
-   
+   delay(100);
   digitalWrite(LED,LOW);
 } // end of setup
 
@@ -284,31 +285,12 @@ void loop()
   
   emonth.battery=int(analogRead(BATT_ADC)*0.03225806);                    //read battery voltage, convert ADC to volts x10
                                                
-  
-  
-  #if (DEBUG == 1) 
-  
-    if (DS18B20)
-    {
-      Serial.print("DS18B20 Temperature: ");
-      if (DHT22_status) Serial.print(emonth.temp_external/10.0); 
-      if (!DHT22_status) Serial.print(emonth.temp/10.0);
-      Serial.print("C, ");
-    }
-    
-    if (DHT22_status)
-    {
-      Serial.print("DHT22 Temperature: ");
-      Serial.print(emonth.temp/10.0); 
-      Serial.print("C, DHT22 Humidity: ");
-      Serial.print(emonth.humidity/10.0);
-      Serial.print("%, ");
-    }
-    
-    Serial.print("Battery voltage: ");  
-    Serial.print(emonth.battery/10.0);
-    Serial.println("V");
-    delay(100);
+    #if DEBUG
+    Serial.print(emonth.temp); Serial.print(" ");
+    Serial.print(emonth.temp_external); Serial.print(" ");
+    Serial.print(emonth.humidity); Serial.print(" ");
+    Serial.println(emonth.battery);
+    delay(20); 
   #endif
 
   #if BLINKLED
