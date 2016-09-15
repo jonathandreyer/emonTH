@@ -42,22 +42,23 @@
   V2.4 - (15/10/15) activate pulse count pin input pullup to stop spurious pulses when no sensor connected
   V2.5 - (23/10/15) default nodeID 23 to enable new emonHub.conf decoder for pulseCount packet structure
   V2.6 - (24/10/15) Tweek RF transmission timmng to help reduce RF packet loss
+  V3.0 - (15/09/16) Add support for si7021 sensor (emonTH V2.0 hardware)
+ -------------------------------------------------------------------------------------------------------------
+  emonhub.conf node decoder:
+  See: https://github.com/openenergymonitor/emonhub/blob/emon-pi/configuration.md
+  
+    [[23]]
+      nodename = emonTH_5
+      firmware = V2.x_emonTH_DHT22_DS18B20_RFM69CW_Pulse
+      hardware = emonTH_(Node_ID_Switch_DIP1:OFF_DIP2:OFF)
+      [[[rx]]]
+         names = temperature, external temperature, humidity, battery, pulseCount
+         datacodes = h,h,h,h,L
+         scales = 0.1,0.1,0.1,0.1,1
+         units = C,C,%,V,p
+  */
 
-emonhub.conf node decoder:
-See: https://github.com/openenergymonitor/emonhub/blob/emon-pi/configuration.md
-
-  [[23]]
-    nodename = emonTH_5
-    firmware = V2.x_emonTH_DHT22_DS18B20_RFM69CW_Pulse
-    hardware = emonTH_(Node_ID_Switch_DIP1:OFF_DIP2:OFF)
-    [[[rx]]]
-       names = temperature, external temperature, humidity, battery, pulseCount
-       datacodes = h,h,h,h,L
-       scales = 0.1,0.1,0.1,0.1,1
-       units = C,C,%,V,p
-*/
-
-const byte version = 26;         // firmware version divided by 10 e,g 16 = V1.6
+const byte version = 30;         // firmware version divided by 10 e,g 16 = V1.6
                                                                       // These variables control the transmit timing of the emonTH
 const unsigned long WDT_PERIOD = 80;                                  // mseconds.
 const unsigned long WDT_MAX_NUMBER = 690;                             // Data sent after WDT_MAX_NUMBER periods of WDT_PERIOD ms without pulses:
