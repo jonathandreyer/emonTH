@@ -42,6 +42,7 @@
   V2.4 - (15/10/15) activate pulse count pin input pullup to stop spurious pulses when no sensor connected
   V2.5 - (23/10/15) default nodeID 23 to enable new emonHub.conf decoder for pulseCount packet structure
   V2.6 - (24/10/15) Tweek RF transmission timmng to help reduce RF packet loss
+  V2.7 - (15/09/16) Serial print serial pairs for emonesp compatiable e.g. temp:210,humidity:56
  -------------------------------------------------------------------------------------------------------------
   emonhub.conf node decoder:
   See: https://github.com/openenergymonitor/emonhub/blob/emon-pi/configuration.md
@@ -57,7 +58,7 @@
          units = C,C,%,V,p
   */
 
-const byte version = 26;         // firmware version divided by 10 e,g 16 = V1.6
+const byte version = 27;         // firmware version divided by 10 e,g 16 = V1.6
                                                                       // These variables control the transmit timing of the emonTH
 const unsigned long WDT_PERIOD = 80;                                  // mseconds.
 const unsigned long WDT_MAX_NUMBER = 690;                             // Data sent after WDT_MAX_NUMBER periods of WDT_PERIOD ms without pulses:
@@ -333,36 +334,25 @@ void loop()
     // See more https://community.openenergymonitor.org/t/emonth-battery-measurement-accuracy/1317
     //emonth.battery=int(analogRead(BATT_ADC)*3.222);
 
+  
     if (debug==1)
     {
-      if (DS18B20)
-      {
-        Serial.print("DS18B20 Temperature: ");
-        if (DHT22_status) Serial.print(emonth.temp_external/10.0);
-        if (!DHT22_status) Serial.print(emonth.temp/10.0);
-        Serial.print("C, ");
+      Serial.print("temp:");Serial.print(emonth.temp); Serial.print(",");
+  
+      if ((DHT22_status) && (DS18B20)){  // DS18b230 + DHT22 = assume ds18b20 is external
+        Serial.print("temp_ex:");Serial.print(emonth.temp_external); Serial.print(",");
       }
 
-      if (DHT22_status)
+      if (DHT22_status) //humidy sensor present
       {
-        Serial.print("DHT22 Temperature: ");
-        Serial.print(emonth.temp/10.0);
-        Serial.print("C, DHT22 Humidity: ");
-        Serial.print(emonth.humidity/10.0);
-        Serial.print("%, ");
+        Serial.print("humidity:");Serial.print(emonth.humidity); Serial.print(",");
       }
-
-      Serial.print("Battery voltage: ");
-      Serial.print(emonth.battery/10.0);
-      Serial.print("V, Pulse count: ");
-      Serial.print(emonth.pulsecount);
-      Serial.println("n");
-
-      unsigned long last = now;
-      now = millis();
-
-      delay(100);
-    }
+      Serial.print("battery: "); Serial.print(emonth.battery); Serial.print(",");
+      if (emonth.pulsecount > 0) {
+        Serial.print("pulse:"); Serial.print(emonth.pulsecount);
+      }
+      delay(50);
+    } // end serial print debug
 
 
     power_spi_enable();
