@@ -44,6 +44,7 @@
   V2.6 - (24/10/15) Tweek RF transmission timmng to help reduce RF packet loss
   V2.7 - (15/09/16) Serial print serial pairs for emonesp compatiable e.g. temp:210,humidity:56
   V3.0 - (15/09/16) Add support for SI7021_status sensor (emonTH V2.0 hardware)
+  V3.1 - (19/09/16) Increase baud 9600 > 115200 to emonesp compatiability
  -------------------------------------------------------------------------------------------------------------
   emonhub.conf node decoder:
   See: https://github.com/openenergymonitor/emonhub/blob/emon-pi/configuration.md
@@ -174,7 +175,7 @@ void setup() {
   rf12_sleep(RF12_SLEEP);
   if (debug==1)
   {
-    Serial.begin(9600);
+    Serial.begin(115200);
     Serial.print(DIP1); Serial.println(DIP2);
     Serial.println("OpenEnergyMonitor.org");
     Serial.print("emonTH - Firmware V"); Serial.println(version*0.1);
