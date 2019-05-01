@@ -86,7 +86,8 @@ const int TEMPERATURE_PRECISION=11;                                   // 9 (93.8
 #include <avr/sleep.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include "DHT.h"
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
 ISR(WDT_vect) { Sleepy::watchdogEvent(); }                            // Attached JeeLib sleep function to Atmega328 watchdog -enables MCU to be put into sleep mode inbetween readings to reduce power consumption
 
 // Hardwired emonTH pin allocations
